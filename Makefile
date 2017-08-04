@@ -6,7 +6,7 @@ OBJECTS = main.o usb.o softserial.o
 
 #  -Wall -Wextra -Werror
 COMPILE = avr-gcc -g -mmcu=$(DEVICE) -Os -std=gnu99 -funsigned-bitfields -fshort-enums \
-                  -DF_CPU=$(F_CPU) -DMAX_SHUTTER_CLOSE_STEPS=18
+                  -DF_CPU=$(F_CPU) -DMAX_SHUTTER_CLOSE_STEPS=21
 
 all: main.hex
 
