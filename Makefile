@@ -1,3 +1,15 @@
+
+TELESCOPE := nites
+
+ifeq (${TELESCOPE}, nites)
+    # Maximum close time of 10.5 seconds
+    # This is 2 seconds more than the nominal 8.5s close
+    # time to account for the shutter-close glitches
+    MAX_SHUTTER_CLOSE_STEPS = 21
+else
+    $(error Unknown telescope ${TELESCOPE})
+endif
+
 DEVICE = atmega328p
 F_CPU = 16000000UL
 
