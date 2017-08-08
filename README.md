@@ -10,3 +10,8 @@ The dome is closed by switching the serial connection from the PC to the Arduino
 The unit reports its status back to the PC via USB every 0.5 seconds.  The status is either `0` (disabled), `254` (actively closing dome), `255` (closed dome and now inactive), or the number of half-second steps left until the timer expires. The `255` state is sticky, and must be reset by sending `0` before the heartbeat timeout can be re-enabled.
 
 See the figures in the `docs` directory for more information on the hardware and code logic.
+
+### Important notes
+
+* The unit should be powered using an external power adaptor powered from the same source as the dome.
+* If using a standard Arduino the DTR-reset logic should be disabled.  On an Arduino Uno this can be done by cutting the RESET-EN trace on the board.
