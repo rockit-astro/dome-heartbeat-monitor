@@ -21,14 +21,14 @@ const int TX_DELAY = 233;
 const int TX_START_OFFSET = 5;
 
 // TX on pin 10 (XXX), RX on pin 11 (XXX)
-#define SOFTSERIAL_PORT PORTD
-#define SOFTSERIAL_PINREG PIND
-#define SOFTSERIAL_DDR DDRD
+#define SERIAL_PORT PORTD
+#define SERIAL_PINREG PIND
+#define SERIAL_DDR DDRD
 
 // Note that this relies on the INT0 interrupt on PD2
-#define SOFTSERIAL_RX_PIN PD2
-#define SOFTSERIAL_TX_PIN PD3
-#define SOFTSERIAL_TX_DD DDD3
+#define SERIAL_RX_PIN PD2
+#define SERIAL_TX_PIN PD3
+#define SERIAL_TX_DD DDD3
 
 static uint8_t input_buffer[256];
 static uint8_t input_read = 0;
@@ -53,7 +53,7 @@ ISR(INT0_vect)
 
     // Make sure that the line is still low, indicating that this is a new trigger
     // and not a stale trigger the last recieved byte
-    if (bit_is_clear(SOFTSERIAL_PINREG, SOFTSERIAL_RX_PIN))
+    if (bit_is_clear(SERIAL_PINREG, SERIAL_RX_PIN))
     {
         // Wait approximately 1/2 of a bit width to "center" the sample
         delay_tuned(RX_DELAY_CENTERING);
@@ -63,7 +63,7 @@ ISR(INT0_vect)
         {
             delay_tuned(RX_DELAY_INTRABIT);
             uint8_t noti = ~i;
-            if (bit_is_set(SOFTSERIAL_PINREG, SOFTSERIAL_RX_PIN))
+            if (bit_is_set(SERIAL_PINREG, SERIAL_RX_PIN))
                 d |= i;
             else // else clause added to ensure function timing is ~balanced
                 d &= noti;
@@ -79,15 +79,15 @@ ISR(INT0_vect)
     }
 }
 
-void softserial_initialize()
+void serial_initialize()
 {
     // Configure output pins
     // Don't overwrite other bits in the register!
-    SOFTSERIAL_DDR |= _BV(SOFTSERIAL_TX_DD);
-    SOFTSERIAL_PORT &= ~_BV(SOFTSERIAL_TX_PIN);
+    SERIAL_DDR |= _BV(SERIAL_TX_DD);
+    SERIAL_PORT &= ~_BV(SERIAL_TX_PIN);
 
     // Enable pullup resistor on RX input
-    SOFTSERIAL_PORT |= _BV(SOFTSERIAL_RX_PIN);
+    SERIAL_PORT |= _BV(SERIAL_RX_PIN);
 
     // Set INT0 to be falling edge triggered
     EICRA = _BV(ISC01);
@@ -96,14 +96,14 @@ void softserial_initialize()
     delay_tuned(TX_DELAY);
 }
 
-bool softserial_can_read()
+bool serial_can_read()
 {
     return input_write != input_read;
 }
 
 // Read a byte from the receive buffer
 // Blocks if the buffer is empty
-uint8_t softserial_read()
+uint8_t serial_read()
 {
     while (input_read == input_write);
     return input_buffer[input_read++];
@@ -112,14 +112,14 @@ uint8_t softserial_read()
 static void set_tx_pin(uint8_t high)
 {
     if (high)
-      SOFTSERIAL_PORT |= _BV(SOFTSERIAL_TX_PIN);
+      SERIAL_PORT |= _BV(SERIAL_TX_PIN);
     else
-      SOFTSERIAL_PORT &= ~_BV(SOFTSERIAL_TX_PIN);
+      SERIAL_PORT &= ~_BV(SERIAL_TX_PIN);
 }
 
 // Send a byte
 // Blocks until sending is complete
-void softserial_write(uint8_t b)
+void serial_write(uint8_t b)
 {
     uint8_t sreg = SREG;
 

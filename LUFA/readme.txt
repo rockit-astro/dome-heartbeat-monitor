@@ -1,0 +1,1 @@
+This directory contains a stripped down version of the LUFA release version "170418".

@@ -14,13 +14,49 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "usb.h"
-#include "softserial.h"
+#include "serial.h"
 
-#define TRIGGER_ENABLE_PORT PORTD
-#define TRIGGER_ENABLE_PINREG PIND
-#define TRIGGER_ENABLE_DDR DDRD
-#define TRIGGER_ENABLE_PIN PD4
-#define TRIGGER_ENABLE_DD DDD4
+// TODO: Define LED pin equivalents for v1 hardware
+#if defined(HARDWARE_VERSION_2)
+    #define TRIGGER_ENABLE_PORT PORTC
+    #define TRIGGER_ENABLE_DDR DDRC
+    #define TRIGGER_ENABLE_PIN PC6
+    #define TRIGGER_ENABLE_DD DDC6
+    
+    #define LED_PORT PORTD
+    #define LED_DDR DDRD
+    #define LED_GREEN_PIN PD4
+    #define LED_GREEN_DD DDD4
+    #define LED_RED_PIN PD7
+    #define LED_RED_DD DDD7
+    
+    #define BLINKER_PORT PORTC
+    #define BLINKER_DDR DDRC
+    #define BLINKER_PIN PC7
+    #define BLINKER_DD DDC7
+#else
+    #define TRIGGER_ENABLE_PORT PORTD
+    #define TRIGGER_ENABLE_DDR DDRD
+    #define TRIGGER_ENABLE_PIN PD4
+    #define TRIGGER_ENABLE_DD DDD4
+
+    #define LED_PORT PORTD
+    #define LED_DDR DDRD
+    #define LED_GREEN_PIN PD5
+    #define LED_GREEN_DD DDD5
+    #define LED_RED_PIN PD6
+    #define LED_RED_DD DDD6
+
+    #define BLINKER_PORT PORTB
+    #define BLINKER_DDR DDRB
+    #define BLINKER_PIN PB5
+    #define BLINKER_DD DDB5
+#endif
+
+#define HEARTBEAT_DISABLED 0
+#define HEARTBEAT_ENABLED 1
+#define HEARTBEAT_TRIGGERED 2
+
 
 // Number of seconds remaining until triggering the force-close
 volatile uint8_t heartbeat = 0;
@@ -39,13 +75,32 @@ volatile uint8_t shutter_b_close_steps = 0;
 // Rate limit the close bytes sent to the dome (2 per second)
 volatile bool wait_before_next_byte = false;
 
+static void set_status_led(uint8_t mode)
+{
+    switch(mode)
+    {
+        case HEARTBEAT_DISABLED:
+            LED_PORT &= ~_BV(LED_GREEN_PIN);
+            LED_PORT &= ~_BV(LED_RED_PIN);
+        break;
+        case HEARTBEAT_ENABLED:
+            LED_PORT |= _BV(LED_GREEN_PIN);
+            LED_PORT &= ~_BV(LED_RED_PIN);
+        break;
+        case HEARTBEAT_TRIGGERED:
+            LED_PORT &= ~_BV(LED_GREEN_PIN);
+            LED_PORT |= _BV(LED_RED_PIN);
+        break;
+    }
+}
+
 void tick()
 {
     // Data is only recieved from the serial port if the heartbeat has triggered and we want to close
     // Therefore any status reporting an open shutter means we want to close that shutter.
-    while (softserial_can_read())
+    while (serial_can_read())
     {
-        switch (softserial_read())
+        switch (serial_read())
         {
             case 'X': // 'A' shutter closed
                 shutter_a_close_steps = 0;
@@ -65,12 +120,12 @@ void tick()
     {
         if (shutter_a_close_steps > 0)
         {
-            softserial_write('A');
+            serial_write('A');
             shutter_a_close_steps--;
         }
         else if (shutter_b_close_steps > 0)
         {
-            softserial_write('B');
+            serial_write('B');
             shutter_b_close_steps--;
         }
 
@@ -105,7 +160,10 @@ void tick()
         // If the heatbeat has triggered the status must be manually
         // cleared by sending a 0 byte
         if (!triggered)
+        {
             heartbeat = value;
+            set_status_led(heartbeat != 0 ? HEARTBEAT_ENABLED : HEARTBEAT_DISABLED);
+        }
     }
 }
 
@@ -117,17 +175,33 @@ int main()
     TIMSK1 |= _BV(OCIE1A);
     TRIGGER_ENABLE_DDR = _BV(TRIGGER_ENABLE_DD);
 
+    // START V2 ONLY
+    // Pin 13 is hard-wired to the onboard LED
+    // Toggle it on the update timer to show the software is running
+    // PD4 and PD6 are used for the status mode LEDs
+    BLINKER_DDR |= _BV(BLINKER_DD);
+    TRIGGER_ENABLE_DDR |= _BV(TRIGGER_ENABLE_DD);
+    LED_DDR |= _BV(LED_GREEN_DD) | _BV(LED_RED_DD);
+
+    set_status_led(HEARTBEAT_DISABLED);
+
     usb_initialize();
-    softserial_initialize();
+    serial_initialize();
 
     sei();
     for (;;)
         tick();
 }
 
+volatile bool led_active;
 ISR(TIMER1_COMPA_vect)
 {
     wait_before_next_byte = false;
+
+    if ((led_active ^= true))
+        BLINKER_PORT |= _BV(BLINKER_PIN);
+    else
+        BLINKER_PORT &= ~_BV(BLINKER_PIN);
 
     // 0xFF represents that the heartbeat has been tripped, and is sticky until the heartbeat is disabled
     // 0x00 represents that the heartbeat is disabled
@@ -138,6 +212,7 @@ ISR(TIMER1_COMPA_vect)
             shutter_a_close_steps = MAX_SHUTTER_CLOSE_STEPS;
             shutter_b_close_steps = MAX_SHUTTER_CLOSE_STEPS;
 
+            set_status_led(HEARTBEAT_TRIGGERED);
             triggered = true;
             active = true;
             TRIGGER_ENABLE_PORT |= _BV(TRIGGER_ENABLE_PIN);
