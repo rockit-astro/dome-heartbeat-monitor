@@ -177,74 +177,6 @@
 			void EVENT_CDC_Device_BreakSent(USB_ClassInfo_CDC_Device_t* const CDCInterfaceInfo,
 			                                const uint8_t Duration) ATTR_NON_NULL_PTR_ARG(1);
 
-			/** Sends a given data buffer to the attached USB host, if connected. If a host is not connected when the function is
-			 *  called, the string is discarded. Bytes will be queued for transmission to the host until either the endpoint bank
-			 *  becomes full, or the \ref CDC_Device_Flush() function is called to flush the pending data to the host. This allows
-			 *  for multiple bytes to be packed into a single endpoint packet, increasing data throughput.
-			 *
-			 *  \pre This function must only be called when the Device state machine is in the \ref DEVICE_STATE_Configured state or
-			 *       the call will fail.
-			 *
-			 *  \param[in,out] CDCInterfaceInfo  Pointer to a structure containing a CDC Class configuration and state.
-			 *  \param[in]     Buffer            Pointer to a buffer containing the data to send to the device.
-			 *  \param[in]     Length            Length of the data to send to the host.
-			 *
-			 *  \return A value from the \ref Endpoint_Stream_RW_ErrorCodes_t enum.
-			 */
-			uint8_t CDC_Device_SendData(USB_ClassInfo_CDC_Device_t* const CDCInterfaceInfo,
-			                            const void* const Buffer,
-			                            const uint16_t Length) ATTR_NON_NULL_PTR_ARG(1) ATTR_NON_NULL_PTR_ARG(2);
-
-			/** Sends a given data buffer from PROGMEM space to the attached USB host, if connected. If a host is not connected when the
-			 *  function is called, the string is discarded. Bytes will be queued for transmission to the host until either the endpoint
-			 *  bank becomes full, or the \ref CDC_Device_Flush() function is called to flush the pending data to the host. This allows
-			 *  for multiple bytes to be packed into a single endpoint packet, increasing data throughput.
-			 *
-			 *  \pre This function must only be called when the Device state machine is in the \ref DEVICE_STATE_Configured state or
-			 *       the call will fail.
-			 *
-			 *  \param[in,out] CDCInterfaceInfo  Pointer to a structure containing a CDC Class configuration and state.
-			 *  \param[in]     Buffer            Pointer to a buffer containing the data to send to the device.
-			 *  \param[in]     Length            Length of the data to send to the host.
-			 *
-			 *  \return A value from the \ref Endpoint_Stream_RW_ErrorCodes_t enum.
-			 */
-			uint8_t CDC_Device_SendData_P(USB_ClassInfo_CDC_Device_t* const CDCInterfaceInfo,
-			                            const void* const Buffer,
-			                            const uint16_t Length) ATTR_NON_NULL_PTR_ARG(1) ATTR_NON_NULL_PTR_ARG(2);
-
-			/** Sends a given null terminated string to the attached USB host, if connected. If a host is not connected when
-			 *  the function is called, the string is discarded. Bytes will be queued for transmission to the host until either
-			 *  the endpoint bank becomes full, or the \ref CDC_Device_Flush() function is called to flush the pending data to
-			 *  the host. This allows for multiple bytes to be packed into a single endpoint packet, increasing data throughput.
-			 *
-			 *  \pre This function must only be called when the Device state machine is in the \ref DEVICE_STATE_Configured state or
-			 *       the call will fail.
-			 *
-			 *  \param[in,out] CDCInterfaceInfo  Pointer to a structure containing a CDC Class configuration and state.
-			 *  \param[in]     String            Pointer to the null terminated string to send to the host.
-			 *
-			 *  \return A value from the \ref Endpoint_Stream_RW_ErrorCodes_t enum.
-			 */
-			uint8_t CDC_Device_SendString(USB_ClassInfo_CDC_Device_t* const CDCInterfaceInfo,
-			                              const char* const String) ATTR_NON_NULL_PTR_ARG(1) ATTR_NON_NULL_PTR_ARG(2);
-
-			/** Sends a given null terminated string from PROGMEM space to the attached USB host, if connected. If a host is not connected
-			 *  when the function is called, the string is discarded. Bytes will be queued for transmission to the host until either
-			 *  the endpoint bank becomes full, or the \ref CDC_Device_Flush() function is called to flush the pending data to
-			 *  the host. This allows for multiple bytes to be packed into a single endpoint packet, increasing data throughput.
-			 *
-			 *  \pre This function must only be called when the Device state machine is in the \ref DEVICE_STATE_Configured state or
-			 *       the call will fail.
-			 *
-			 *  \param[in,out] CDCInterfaceInfo  Pointer to a structure containing a CDC Class configuration and state.
-			 *  \param[in]     String            Pointer to the null terminated string to send to the host.
-			 *
-			 *  \return A value from the \ref Endpoint_Stream_RW_ErrorCodes_t enum.
-			 */
-			uint8_t CDC_Device_SendString_P(USB_ClassInfo_CDC_Device_t* const CDCInterfaceInfo,
-			                              const char* const String) ATTR_NON_NULL_PTR_ARG(1) ATTR_NON_NULL_PTR_ARG(2);
-
 			/** Sends a given byte to the attached USB host, if connected. If a host is not connected when the function is called, the
 			 *  byte is discarded. Bytes will be queued for transmission to the host until either the endpoint bank becomes full, or the
 			 *  \ref CDC_Device_Flush() function is called to flush the pending data to the host. This allows for multiple bytes to be
@@ -312,51 +244,10 @@
 			 */
 			void CDC_Device_SendControlLineStateChange(USB_ClassInfo_CDC_Device_t* const CDCInterfaceInfo) ATTR_NON_NULL_PTR_ARG(1);
 
-			#if defined(FDEV_SETUP_STREAM) || defined(__DOXYGEN__)
-			/** Creates a standard character stream for the given CDC Device instance so that it can be used with all the regular
-			 *  functions in the standard <stdio.h> library that accept a \c FILE stream as a destination (e.g. \c fprintf()). The created
-			 *  stream is bidirectional and can be used for both input and output functions.
-			 *
-			 *  Reading data from this stream is non-blocking, i.e. in most instances, complete strings cannot be read in by a single
-			 *  fetch, as the endpoint will not be ready at some point in the transmission, aborting the transfer. However, this may
-			 *  be used when the read data is processed byte-per-bye (via \c getc()) or when the user application will implement its own
-			 *  line buffering.
-			 *
-			 *  \note The created stream can be given as \c stdout if desired to direct the standard output from all \c <stdio.h> functions
-			 *        to the given CDC interface.
-			 *        \n\n
-			 *
-			 *  \note This function is not available on all microcontroller architectures.
-			 *
-			 *  \param[in,out] CDCInterfaceInfo  Pointer to a structure containing a CDC Class configuration and state.
-			 *  \param[in,out] Stream            Pointer to a FILE structure where the created stream should be placed.
-			 */
-			void CDC_Device_CreateStream(USB_ClassInfo_CDC_Device_t* const CDCInterfaceInfo,
-			                             FILE* const Stream) ATTR_NON_NULL_PTR_ARG(1) ATTR_NON_NULL_PTR_ARG(2);
-
-			/** Identical to \ref CDC_Device_CreateStream(), except that reads are blocking until the calling stream function terminates
-			 *  the transfer. While blocking, the USB and CDC service tasks are called repeatedly to maintain USB communications.
-			 *
-			 *  \note This function is not available on all microcontroller architectures.
-			 *
-			 *  \param[in,out] CDCInterfaceInfo  Pointer to a structure containing a CDC Class configuration and state.
-			 *  \param[in,out] Stream            Pointer to a FILE structure where the created stream should be placed.
-			 */
-			void CDC_Device_CreateBlockingStream(USB_ClassInfo_CDC_Device_t* const CDCInterfaceInfo,
-			                                     FILE* const Stream) ATTR_NON_NULL_PTR_ARG(1) ATTR_NON_NULL_PTR_ARG(2);
-			#endif
-
 	/* Private Interface - For use in library only: */
 	#if !defined(__DOXYGEN__)
 		/* Function Prototypes: */
 			#if defined(__INCLUDE_FROM_CDC_DEVICE_C)
-				#if defined(FDEV_SETUP_STREAM)
-				static int CDC_Device_putchar(char c,
-				                              FILE* Stream) ATTR_NON_NULL_PTR_ARG(2);
-				static int CDC_Device_getchar(FILE* Stream) ATTR_NON_NULL_PTR_ARG(1);
-				static int CDC_Device_getchar_Blocking(FILE* Stream) ATTR_NON_NULL_PTR_ARG(1);
-				#endif
-
 				void CDC_Device_Event_Stub(void) ATTR_CONST;
 
 				void EVENT_CDC_Device_LineEncodingChanged(USB_ClassInfo_CDC_Device_t* const CDCInterfaceInfo)
