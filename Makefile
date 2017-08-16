@@ -1,48 +1,49 @@
+# Dome Heartbeat Monitor v2
+# Based on LUFA Library makefile template
 
-TELESCOPE := nites
+# Run "make help" for target help.
 
-ifeq (${TELESCOPE}, nites)
-    # Maximum close time of 10.5 seconds
-    # This is 2 seconds more than the nominal 8.5s close
-    # time to account for the shutter-close glitches
-    MAX_SHUTTER_CLOSE_STEPS = 21
-else
-    $(error Unknown telescope ${TELESCOPE})
-endif
+# Maximum number of close steps to send to the dome
+# Use 21 for the 8' NITES dome
+# Use XXX for the 20' W1m dome
+MAX_SHUTTER_CLOSE_STEPS = 21
 
-DEVICE = atmega328p
-F_CPU = 16000000UL
+MCU                = atmega32u4
+ARCH               = AVR8
+BOARD              = MICRO
+F_CPU              = 16000000
+F_USB              = $(F_CPU)
+AVRDUDE_PROGRAMMER = avr109
+AVRDUDE_PORT       = /dev/tty.usbmodem*
 
-AVRDUDE = avrdude -c arduino -P /dev/tty.usbmodem* -p $(DEVICE)
-OBJECTS = main.o usb.o softserial.o
+OPTIMIZATION = s
+TARGET       = main
+SRC          = main.c serial.c usb.c usb_descriptors.c $(LUFA_SRC_USB) $(LUFA_SRC_USBCLASS)
+LUFA_PATH    = LUFA
+CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DMAX_SHUTTER_CLOSE_STEPS=$(MAX_SHUTTER_CLOSE_STEPS)
+LD_FLAGS     =
 
-#  -Wall -Wextra -Werror
-COMPILE = avr-gcc -g -mmcu=$(DEVICE) -Os -std=gnu99 -funsigned-bitfields -fshort-enums \
-                  -DF_CPU=$(F_CPU) -DMAX_SHUTTER_CLOSE_STEPS=21
+# Default target
+all:
 
-all: main.hex
-
-install: main.hex
-	$(AVRDUDE) -U flash:w:main.hex:i
-
-clean:
-	rm -f reset main.hex main.elf $(OBJECTS)
+# Alias the avrdude target to install for convenience
+install: avrdude
 
 disasm:	main.elf
 	avr-objdump -d main.elf
 
-size: main.elf
-	avr-size -C --mcu=$(DEVICE) main.elf
+# Include LUFA-specific DMBS extension modules
+DMBS_LUFA_PATH ?= $(LUFA_PATH)/Build/LUFA
+include $(DMBS_LUFA_PATH)/lufa-sources.mk
+include $(DMBS_LUFA_PATH)/lufa-gcc.mk
 
-debug: main.elf
-	avarice -g --part $(DEVICE) --dragon --jtag usb --file main.elf :4242
-
-.c.o:
-	$(COMPILE) -c $< -o $@
-
-main.elf: $(OBJECTS)
-	$(COMPILE) -o main.elf $(OBJECTS) -Wl,-u,vfprintf -lprintf_flt -lm
-
-main.hex: main.elf
-	rm -f main.hex
-	avr-objcopy -j .text -j .data -O ihex main.elf main.hex
+# Include common DMBS build system modules
+DMBS_PATH      ?= $(LUFA_PATH)/Build/DMBS/DMBS
+include $(DMBS_PATH)/core.mk
+include $(DMBS_PATH)/cppcheck.mk
+include $(DMBS_PATH)/doxygen.mk
+include $(DMBS_PATH)/dfu.mk
+include $(DMBS_PATH)/gcc.mk
+include $(DMBS_PATH)/hid.mk
+include $(DMBS_PATH)/avrdude.mk
+include $(DMBS_PATH)/atprogram.mk

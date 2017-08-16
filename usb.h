@@ -11,9 +11,9 @@
 #ifndef DOME_HEARTBEAT_USB_H
 #define DOME_HEARTBEAT_USB_H
 
-void usb_initialize();
-bool usb_can_read();
-uint8_t usb_read();
+void usb_initialize(void);
+bool usb_can_read(void);
+int16_t usb_read(void);
 void usb_write(uint8_t b);
 
 #endif

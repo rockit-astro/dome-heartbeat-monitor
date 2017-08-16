@@ -15,3 +15,13 @@ See the figures in the `docs` directory for more information on the hardware and
 
 * The unit should be powered using an external power adaptor powered from the same source as the dome.
 * If using a standard Arduino the DTR-reset logic should be disabled.  On an Arduino Uno this can be done by cutting the RESET-EN trace on the board.
+
+### Compilation/Installation
+
+Requires a working `avr-gcc` installation.
+* On macOS add the `osx-cross/avr` Homebrew tap then install the `avr-gcc`, `avr-libc`, `avr-binutils`, `avrdude` packages.
+* On Ubuntu install the `gcc-avr`, `avr-libc`, `binutils-avr`, `avrdude` packages.
+* On Windows WinAVR should work.
+
+First compile the firmware using `make TELESCOPE=nites` or `make TELESCOPE=w1m`.
+Then, for both v2 and v1 (with the DTR logic disabled) hardware, press the reset button on the Arduino board and then immediately run `make install` before the bootloader timeout has completed.
