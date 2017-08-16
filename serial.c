@@ -10,6 +10,17 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define TX_LED_DISABLED   PORTB &= ~_BV(PB1)
+#define TX_LED_ENABLED    PORTB |= _BV(PB1)
+#define RX_LED_DISABLED   PORTB &= ~_BV(PB3)
+#define RX_LED_ENABLED    PORTB |= _BV(PB3)
+#define TX_RX_LED_INIT    DDRB |= _BV(DDB1), DDRB |= _BV(DDB3), TX_LED_DISABLED, RX_LED_DISABLED
+
+// Counters (in 9.984ms increments) for blinking the TX/RX LEDs
+#define TX_RX_LED_PULSE_MS 10
+volatile uint8_t tx_led_pulse = 0;
+volatile uint8_t rx_led_pulse = 0;
+
 static uint8_t output_buffer[256];
 static volatile uint8_t output_read = 0;
 static volatile uint8_t output_write = 0;
@@ -30,7 +41,17 @@ void serial_initialize(void)
 
     // Enable receive, transmit, data received interrupt
     UCSR1B = _BV(RXEN1) | _BV(TXEN1) | _BV(RXCIE1);
+    TX_RX_LED_INIT;
 
+    // Configure timer3 to interrupt every 0.009984 seconds
+    // for ticking the TX/RX LEDs
+    // Note: this should use a timer with lower interrupt
+    // priority than the UDRE to avoid race conditions
+    OCR3A = 156;
+    TCCR3B = _BV(CS32) | _BV(CS30) | _BV(WGM32);
+    TIMSK3 |= _BV(OCIE3A);
+
+    tx_led_pulse = rx_led_pulse = 0;
     input_read = input_write = 0;
     output_read = output_write = 0;
 }
@@ -56,7 +77,6 @@ void serial_write(uint8_t b)
     while (output_write == (uint8_t)(output_read - 1));
 
     output_buffer[output_write++] = b;
-
     // Enable transmit if necessary
     UCSR1B |= _BV(UDRIE1);
 }
@@ -64,7 +84,11 @@ void serial_write(uint8_t b)
 ISR(USART1_UDRE_vect)
 {
     if (output_write != output_read)
+    {
         UDR1 = output_buffer[output_read++];
+        TX_LED_ENABLED;
+        tx_led_pulse = TX_RX_LED_PULSE_MS;
+    }
 
     // Ran out of data to send - disable the interrupt
     if (output_write == output_read)
@@ -74,4 +98,22 @@ ISR(USART1_UDRE_vect)
 ISR(USART1_RX_vect)
 {
     input_buffer[(uint8_t)(input_write++)] = UDR1;
+    RX_LED_ENABLED;
+    rx_led_pulse = TX_RX_LED_PULSE_MS;
+}
+
+ISR(TIMER3_COMPA_vect)
+{
+    // Runs once every 10ms
+    if (tx_led_pulse && !(--tx_led_pulse))
+        TX_LED_DISABLED;
+    if (rx_led_pulse && !(--rx_led_pulse))
+        RX_LED_DISABLED;
+
+    // Work around a bug where the LEDs stay enabled when *_led_pulse == 0
+    // TODO: work out what causes this and fix it properly
+    if (tx_led_pulse == 0)
+        TX_LED_DISABLED;
+    if (rx_led_pulse == 0)
+        RX_LED_DISABLED;
 }
