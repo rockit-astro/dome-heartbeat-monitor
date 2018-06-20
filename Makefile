@@ -6,8 +6,8 @@
 # Maximum number of close steps to send to the dome
 # Use 21 for the 8' NITES dome
 # Use XXX for the 20' W1m dome
-# Use 60 for the 18' GOTO dome
-MAX_SHUTTER_CLOSE_STEPS = 60
+# Use 62 for the 18' GOTO domes
+MAX_SHUTTER_CLOSE_STEPS = 62
 
 MCU                = atmega32u4
 ARCH               = AVR8
