@@ -88,10 +88,20 @@ int16_t usb_read(void)
 // Will block if the buffer is full
 void usb_write(uint8_t b)
 {
+    // Work around a bug where the device will block if the host has dropped the connection
+    // The DTR line will always (and only) be set when we have an open connection
+    if (!(interface.State.ControlLineStates.HostToDevice & CDC_CONTROL_LINE_OUT_DTR))
+        return;
+
     // Note: This is ignoring any errors (e.g. send failed)
     // We are only sending single byte packets, so there's no
     // real benefits to handling them properly
     if (CDC_Device_SendByte(&interface, b) != ENDPOINT_READYWAIT_NoError)
+        return;
+
+    // Work around a bug where the device will block if the host has dropped the connection
+    // The DTR line will always (and only) be set when we have an open connection
+    if (!(interface.State.ControlLineStates.HostToDevice & CDC_CONTROL_LINE_OUT_DTR))
         return;
 
     if (CDC_Device_Flush(&interface) != ENDPOINT_READYWAIT_NoError)
