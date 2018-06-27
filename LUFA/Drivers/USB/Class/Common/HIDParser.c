@@ -1,13 +1,13 @@
 /*
              LUFA Library
-     Copyright (C) Dean Camera, 2017.
+     Copyright (C) Dean Camera, 2018.
 
   dean [at] fourwalledcubicle [dot] com
            www.lufa-lib.org
 */
 
 /*
-  Copyright 2017  Dean Camera (dean [at] fourwalledcubicle [dot] com)
+  Copyright 2018  Dean Camera (dean [at] fourwalledcubicle [dot] com)
 
   Permission to use, copy, modify, distribute, and sell this
   software and its documentation for any purpose is hereby granted
@@ -92,7 +92,7 @@ uint8_t USB_ProcessHIDReport(const uint8_t* ReportData,
 
 				memcpy((CurrStateTable + 1),
 				       CurrStateTable,
-				       sizeof(HID_ReportItem_t));
+				       sizeof(HID_StateTable_t));
 
 				CurrStateTable++;
 				break;
