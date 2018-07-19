@@ -13,9 +13,11 @@ DMBS_BUILD_OPTIONAL_VARS   +=
 DMBS_BUILD_PROVIDED_VARS   +=
 DMBS_BUILD_PROVIDED_MACROS +=
 
-# Import the CORE module of DMBS
+# Conditionally import the CORE module of DMBS if it is not already imported
 DMBS_MODULE_PATH := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
-include $(DMBS_MODULE_PATH)/core.mk
+ifeq ($(findstring CORE, $(DMBS_BUILD_MODULES)),)
+  include $(DMBS_MODULE_PATH)/core.mk
+endif
 
 # Sanity-check values of mandatory user-supplied variables
 $(foreach MANDATORY_VAR, $(DMBS_BUILD_MANDATORY_VARS), $(call ERROR_IF_UNSET, $(MANDATORY_VAR)))

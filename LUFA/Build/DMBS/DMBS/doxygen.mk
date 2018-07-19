@@ -13,9 +13,11 @@ DMBS_BUILD_OPTIONAL_VARS   += DOXYGEN_CONF DOXYGEN_FAIL_ON_WARNING DOXYGEN_OVERR
 DMBS_BUILD_PROVIDED_VARS   +=
 DMBS_BUILD_PROVIDED_MACROS +=
 
-# Import the CORE module of DMBS
+# Conditionally import the CORE module of DMBS if it is not already imported
 DMBS_MODULE_PATH := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
-include $(DMBS_MODULE_PATH)/core.mk
+ifeq ($(findstring CORE, $(DMBS_BUILD_MODULES)),)
+  include $(DMBS_MODULE_PATH)/core.mk
+endif
 
 # Default values of optionally user-supplied variables
 DOXYGEN_CONF            ?= doxyfile
@@ -56,3 +58,5 @@ doxygen-upgrade: $(DOXYGEN_CONF) $(MAKEFILE_LIST)
 doxygen-create: $(MAKEFILE_LIST)
 	@echo $(MSG_DOXYGEN_CMD) Creating new configuration file \"$(DOXYGEN_CONF)\" with latest template
 	doxygen -g $(DOXYGEN_CONF) > /dev/null
+
+

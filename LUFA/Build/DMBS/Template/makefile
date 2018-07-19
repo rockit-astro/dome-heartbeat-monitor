@@ -20,12 +20,8 @@ LD_FLAGS     =
 # Default target
 all:
 
-# Include libraries and DMBS build script makefiles
+# Include DMBS build script makefiles
 DMBS_PATH   ?= ../DMBS
-LIB_PATH    ?= lib
-
-include $(LIB_PATH)/TEMPLATE_LIB/TEMPLATE_LIB.mk
-
 include $(DMBS_PATH)/core.mk
 include $(DMBS_PATH)/gcc.mk
 include $(DMBS_PATH)/cppcheck.mk

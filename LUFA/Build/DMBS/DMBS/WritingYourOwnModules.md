@@ -34,9 +34,11 @@ the dependencies of another module's targets.
 Next, your module should always import the DMBS `CORE` module, via the
 following:
 
-    # Import the CORE module of DMBS
+    # Conditionally import the CORE module of DMBS if it is not already imported
     DMBS_MODULE_PATH := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
-    include $(DMBS_MODULE_PATH)/core.mk
+    ifeq ($(findstring CORE, $(DMBS_BUILD_MODULES)),)
+      include $(DMBS_MODULE_PATH)/core.mk
+    endif
 
 This ensures that the `make help` target is always available. In addition, the
 `CORE` module exposes some [commonly used macros and variables](core.md) to
@@ -61,7 +63,6 @@ user:
     $(foreach MANDATORY_VAR, $(DMBS_BUILD_MANDATORY_VARS), $(call ERROR_IF_UNSET, $(MANDATORY_VAR)))
 
 As well as complaining if they are set, but currently empty:
-
     $(call ERROR_IF_EMPTY, SOME_MANDATORY_VARIABLE)
     $(call ERROR_IF_EMPTY, SOME_OPTIONAL_BUT_NON_EMPTY_VARIABLE)
 
