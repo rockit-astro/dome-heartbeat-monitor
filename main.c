@@ -43,54 +43,12 @@ volatile bool triggered = false;
 volatile uint8_t shutter_a_close_steps = 0;
 volatile uint8_t shutter_b_close_steps = 0;
 
-// Rate limit the close bytes sent to the dome (2 per second)
-volatile bool wait_before_next_byte = false;
+// Rate limit the status reports to the host PC to 2Hz
+volatile bool send_status_byte = false;
 
-void tick(void)
+void poll_usb(void)
 {
-    // Data is only recieved from the serial port if the heartbeat has triggered and we want to close
-    // Therefore any status reporting an open shutter means we want to close that shutter.
-    while (serial_can_read())
-    {
-        switch (serial_read())
-        {
-            case 'X': // 'A' shutter closed
-                shutter_a_close_steps = 0;
-                break;
-            case 'Y': // 'B' shutter closed
-                shutter_b_close_steps = 0;
-                break;
-            case '0': // 'A' shutter closed, 'B' shutter closed (PLC dome controller only)
-                shutter_a_close_steps = 0;
-                shutter_b_close_steps = 0;
-        }
-    }
-
-    // Try and close the dome a step if we need to
-    // If the heartbeat has triggered and the dome is not closed
-    if (!wait_before_next_byte && (shutter_a_close_steps > 0 || shutter_b_close_steps > 0))
-    {
-        if (shutter_a_close_steps > 0)
-        {
-            serial_write('A');
-            shutter_a_close_steps--;
-        }
-        else if (shutter_b_close_steps > 0)
-        {
-            serial_write('B');
-            shutter_b_close_steps--;
-        }
-
-        wait_before_next_byte = true;
-    }
-
-    // Return serial control to the PC after both shutters are closed
-    if (active && shutter_a_close_steps == 0 && shutter_b_close_steps == 0)
-    {
-        RELAY_DISABLED;
-        active = false;
-    }
-
+    // Check for ping or disable bytes from the host PC
     while (usb_can_read())
     {
         int16_t value = usb_read();
@@ -122,6 +80,13 @@ void tick(void)
                 HEARTBEAT_LED_DISABLED;
         }
     }
+
+    if (send_status_byte)
+    {
+        // Send current status back to the host computer
+        usb_write(active ? 254 : triggered ? 255 : heartbeat);
+        send_status_byte = false;
+    }
 }
 
 int main(void)
@@ -140,21 +105,49 @@ int main(void)
 
     sei();
     for (;;)
-        tick();
+        poll_usb();
 }
 
 volatile bool led_active;
 ISR(TIMER1_COMPA_vect)
 {
-    wait_before_next_byte = false;
-
+    // Update the status LED on the arduino to show that the
+    // monitoring is still active
     if ((led_active ^= true))
         BLINKER_LED_ENABLED;
     else
         BLINKER_LED_DISABLED;
 
-    // 0xFF represents that the heartbeat has been tripped, and is sticky until the heartbeat is disabled
-    // 0x00 represents that the heartbeat is disabled
+    // Check whether we need to close the dome
+    // This is done inside the ISR to avoid any problems with the USB connection blocking
+    // from interfering with the primary job of the device
+
+    // Check for data from the dome PLC
+    // This port is physically disconnected until the relay is enabled
+    // so we only expect data to be read when we are tripped and actively closing
+    //
+    // IMPORTANT: We must interact with the PLC serial from within this ISR because
+    // the USB read/write can block the main thread if the connection goes down uncleanly
+    while (serial_can_read())
+    {
+        switch (serial_read())
+        {
+            case 'X': // 'A' shutter closed
+                shutter_a_close_steps = 0;
+                break;
+            case 'Y': // 'B' shutter closed
+                shutter_b_close_steps = 0;
+                break;
+            case '0': // 'A' shutter closed, 'B' shutter closed (PLC dome controller only)
+                shutter_a_close_steps = 0;
+                shutter_b_close_steps = 0;
+        }
+    }
+
+    // Decrement the heartbeat counter and trigger a close if it reaches 0
+    // There are two special values that are not real times:
+    //   0xFF represents that the heartbeat has been tripped, and is sticky until the heartbeat is disabled
+    //   0x00 represents that the heartbeat is disabled
     if (heartbeat != 0xFF && heartbeat != 0)
     {
         if (--heartbeat == 0)
@@ -169,6 +162,24 @@ ISR(TIMER1_COMPA_vect)
         }
     }
 
-    // Update user on current status
-    usb_write(active ? 254 : triggered ? 255 : heartbeat);
+    // Close the dome by a step
+    if (shutter_a_close_steps > 0)
+    {
+        serial_write('A');
+        shutter_a_close_steps--;
+    }
+    else if (shutter_b_close_steps > 0)
+    {
+        serial_write('B');
+        shutter_b_close_steps--;
+    }
+
+    // Return serial control to the PC after both shutters are closed
+    if (active && shutter_a_close_steps == 0 && shutter_b_close_steps == 0)
+    {
+        RELAY_DISABLED;
+        active = false;
+    }
+    
+    send_status_byte = true;
 }
