@@ -42,6 +42,7 @@ volatile bool triggered = false;
 // Number of close steps to send to the dome
 volatile uint8_t shutter_a_close_steps = 0;
 volatile uint8_t shutter_b_close_steps = 0;
+volatile uint8_t relay_reset_steps = 0;
 
 // Rate limit the status reports to the host PC to 2Hz
 volatile bool send_status_byte = false;
@@ -159,12 +160,23 @@ ISR(TIMER1_COMPA_vect)
             triggered = true;
             active = true;
             RELAY_ENABLED;
+
+            #if HAS_BUMPER_GUARD
+            // Spend a couple of seconds trying to toggle
+            // the bumper guard relay before sending close commands
+            relay_reset_steps = 4;
+            #endif
         }
     }
 
-    // Close the dome by a step
-    if (shutter_a_close_steps > 0)
+    if (relay_reset_steps > 0)
     {
+        serial_write('R');
+        relay_reset_steps--;
+    }
+    else if (shutter_a_close_steps > 0)
+    {
+        // Close the dome by a step
         serial_write('A');
         shutter_a_close_steps--;
     }

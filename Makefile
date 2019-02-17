@@ -9,6 +9,11 @@
 # Use 62 for the 18' GOTO domes
 MAX_SHUTTER_CLOSE_STEPS = 62
 
+# Send the bumper guard reset command before closing?
+# Use 1 for domes that have a bumper guard installed
+# Use 0 otherwise
+HAS_BUMPER_GUARD = 0
+
 MCU                = atmega32u4
 ARCH               = AVR8
 BOARD              = MICRO
@@ -21,7 +26,7 @@ OPTIMIZATION = s
 TARGET       = main
 SRC          = main.c serial.c usb.c usb_descriptors.c $(LUFA_SRC_USB) $(LUFA_SRC_USBCLASS)
 LUFA_PATH    = LUFA
-CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DMAX_SHUTTER_CLOSE_STEPS=$(MAX_SHUTTER_CLOSE_STEPS)
+CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DMAX_SHUTTER_CLOSE_STEPS=$(MAX_SHUTTER_CLOSE_STEPS) -DHAS_BUMPER_GUARD=$(HAS_BUMPER_GUARD)
 LD_FLAGS     =
 
 # Default target
