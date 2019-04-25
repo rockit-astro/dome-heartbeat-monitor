@@ -20,6 +20,10 @@
 #define RELAY_ENABLED  PORTC |= _BV(PC6)
 #define RELAY_INIT     DDRC |= _BV(DDC6), RELAY_DISABLED
 
+#define SIREN_DISABLED PORTB &= ~_BV(PB2)
+#define SIREN_ENABLED  PORTB |= _BV(PB2)
+#define SIREN_INIT     DDRB |= _BV(DDB2), SIREN_DISABLED
+
 #define BLINKER_LED_DISABLED PORTC &= ~_BV(PC7)
 #define BLINKER_LED_ENABLED  PORTC |= _BV(PC7)
 #define BLINKER_LED_INIT     DDRC |= _BV(DDC7), BLINKER_LED_DISABLED
@@ -43,6 +47,7 @@ volatile bool triggered = false;
 volatile uint8_t shutter_a_close_steps = 0;
 volatile uint8_t shutter_b_close_steps = 0;
 volatile uint8_t relay_reset_steps = 0;
+volatile uint8_t enable_siren_steps = 0;
 
 // Rate limit the status reports to the host PC to 2Hz
 volatile bool send_status_byte = false;
@@ -55,6 +60,10 @@ void poll_usb(void)
         int16_t value = usb_read();
         if (value < 0)
             break;
+
+        // Enable the siren for 5 seconds
+        if (value == 0xFF)
+            enable_siren_steps = 10;
 
         // Accept timeouts up to two minutes
         if (value > 240)
@@ -98,6 +107,7 @@ int main(void)
     TIMSK1 |= _BV(OCIE1A);
 
     RELAY_INIT;
+    SIREN_INIT;
     BLINKER_LED_INIT;
     HEARTBEAT_LED_INIT;
 
@@ -151,6 +161,12 @@ ISR(TIMER1_COMPA_vect)
     //   0x00 represents that the heartbeat is disabled
     if (heartbeat != 0xFF && heartbeat != 0)
     {
+        // Start the siren 5 seconds before closing
+        // There is a chance that we may receive another
+        // ping, but its much more likely that we will close
+        if (heartbeat == 10)
+            enable_siren_steps = 10;
+
         if (--heartbeat == 0)
         {
             shutter_a_close_steps = MAX_SHUTTER_CLOSE_STEPS;
@@ -192,6 +208,14 @@ ISR(TIMER1_COMPA_vect)
         RELAY_DISABLED;
         active = false;
     }
-    
+
+    if (enable_siren_steps > 0)
+    {
+        SIREN_ENABLED;
+
+        if (--enable_siren_steps == 0)
+            SIREN_DISABLED;
+    }
+
     send_status_byte = true;
 }
