@@ -4,7 +4,8 @@
 # Run "make help" for target help.
 
 # Maximum number of close steps to send to the dome
-# Use 21 for the 8' NITES dome
+# Use 21 for the 7.5' old NITES dome
+# Use 35 for the 12.5' new NITES dome
 # Use 62 for the 20' W1m dome
 # Use 62 for the 18' GOTO domes
 MAX_SHUTTER_CLOSE_STEPS = 62
