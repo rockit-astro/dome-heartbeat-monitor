@@ -15,6 +15,10 @@ MAX_SHUTTER_CLOSE_STEPS = 62
 # Use 0 otherwise
 HAS_BUMPER_GUARD = 0
 
+# Use 1 for the older boards that connect a siren to the ISCP header on the top of the Arduino
+# Use 0 for the newer boards that have a siren header on the main board
+EXTERNAL_SIREN = 0
+
 MCU                = atmega32u4
 ARCH               = AVR8
 BOARD              = MICRO
@@ -27,7 +31,7 @@ OPTIMIZATION = s
 TARGET       = main
 SRC          = main.c serial.c usb.c usb_descriptors.c $(LUFA_SRC_USB) $(LUFA_SRC_USBCLASS)
 LUFA_PATH    = LUFA
-CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DMAX_SHUTTER_CLOSE_STEPS=$(MAX_SHUTTER_CLOSE_STEPS) -DHAS_BUMPER_GUARD=$(HAS_BUMPER_GUARD)
+CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DMAX_SHUTTER_CLOSE_STEPS=$(MAX_SHUTTER_CLOSE_STEPS) -DHAS_BUMPER_GUARD=$(HAS_BUMPER_GUARD) -DEXTERNAL_SIREN=$(EXTERNAL_SIREN)
 LD_FLAGS     =
 
 # Default target
