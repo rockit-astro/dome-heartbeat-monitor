@@ -196,9 +196,21 @@ ISR(TIMER1_COMPA_vect)
         serial_write('R');
         relay_reset_steps--;
     }
-    else if (shutter_a_close_steps > 0)
+#if CLOSE_B_FIRST
+    else if (shutter_b_close_steps > 0)
     {
         // Close the dome by a step
+        serial_write('B');
+        shutter_b_close_steps--;
+    }
+    else if (shutter_a_close_steps > 0)
+    {
+        serial_write('A');
+        shutter_a_close_steps--;
+    }
+#else
+    else if (shutter_a_close_steps > 0)
+    {
         serial_write('A');
         shutter_a_close_steps--;
     }
@@ -207,6 +219,7 @@ ISR(TIMER1_COMPA_vect)
         serial_write('B');
         shutter_b_close_steps--;
     }
+#endif
 
     // Return serial control to the PC after both shutters are closed
     if (active && shutter_a_close_steps == 0 && shutter_b_close_steps == 0)

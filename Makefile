@@ -13,11 +13,15 @@ MAX_SHUTTER_CLOSE_STEPS = 62
 # Send the bumper guard reset command before closing?
 # Use 1 for domes that have a bumper guard installed
 # Use 0 otherwise
-HAS_BUMPER_GUARD = 0
+HAS_BUMPER_GUARD = 1
 
 # Use 1 for the older boards that connect a siren to the ISCP header on the top of the Arduino
 # Use 0 for the newer boards that have a siren header on the main board
 EXTERNAL_SIREN = 0
+
+# Use 0 to close the A side first
+# Use 1 to close the B side first
+CLOSE_B_FIRST = 1
 
 MCU                = atmega32u4
 ARCH               = AVR8
@@ -31,7 +35,7 @@ OPTIMIZATION = s
 TARGET       = main
 SRC          = main.c serial.c usb.c usb_descriptors.c $(LUFA_SRC_USB) $(LUFA_SRC_USBCLASS)
 LUFA_PATH    = LUFA
-CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DMAX_SHUTTER_CLOSE_STEPS=$(MAX_SHUTTER_CLOSE_STEPS) -DHAS_BUMPER_GUARD=$(HAS_BUMPER_GUARD) -DEXTERNAL_SIREN=$(EXTERNAL_SIREN)
+CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DMAX_SHUTTER_CLOSE_STEPS=$(MAX_SHUTTER_CLOSE_STEPS) -DHAS_BUMPER_GUARD=$(HAS_BUMPER_GUARD) -DEXTERNAL_SIREN=$(EXTERNAL_SIREN) -DCLOSE_B_FIRST=$(CLOSE_B_FIRST)
 LD_FLAGS     =
 
 # Default target
