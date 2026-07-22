@@ -12,7 +12,7 @@
 #define DOME_HEARTBEAT_USB_H
 
 void usb_initialize(void);
-bool usb_can_read(void);
+uint16_t usb_poll(void);
 int16_t usb_read(void);
 void usb_write(uint8_t b);
 

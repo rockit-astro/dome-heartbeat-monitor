@@ -62,9 +62,12 @@ void usb_initialize(void)
     USB_Init();
 }
 
-bool usb_can_read(void)
+// Service USB connection and return number of bytes available to read
+uint16_t usb_poll(void)
 {
-    return CDC_Device_BytesReceived(&interface) > 0;
+	CDC_Device_USBTask(&interface);
+	USB_USBTask();
+    return CDC_Device_BytesReceived(&interface);
 }
 
 // Read a byte from the receive buffer
@@ -88,23 +91,10 @@ int16_t usb_read(void)
 // Will block if the buffer is full
 void usb_write(uint8_t b)
 {
-    // Work around a bug where the device will block if the host has dropped the connection
-    // The DTR line will always (and only) be set when we have an open connection
-    if (!(interface.State.ControlLineStates.HostToDevice & CDC_CONTROL_LINE_OUT_DTR))
-        return;
-
     // Note: This is ignoring any errors (e.g. send failed)
     // We are only sending single byte packets, so there's no
     // real benefits to handling them properly
     if (CDC_Device_SendByte(&interface, b) != ENDPOINT_READYWAIT_NoError)
-        return;
-
-    // Work around a bug where the device will block if the host has dropped the connection
-    // The DTR line will always (and only) be set when we have an open connection
-    if (!(interface.State.ControlLineStates.HostToDevice & CDC_CONTROL_LINE_OUT_DTR))
-        return;
-
-    if (CDC_Device_Flush(&interface) != ENDPOINT_READYWAIT_NoError)
         return;
 
     // Flash the TX LED

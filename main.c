@@ -61,7 +61,7 @@ volatile bool send_status_byte = false;
 void poll_usb(void)
 {
     // Check for ping or disable bytes from the host PC
-    while (usb_can_read())
+    while (usb_poll() > 0)
     {
         int16_t value = usb_read();
         if (value < 0)
