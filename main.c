@@ -5,6 +5,7 @@
 //  as published by the Free Software Foundation and included in the LICENSE file.
 //**********************************************************************************
 
+#include <avr/eeprom.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
@@ -15,6 +16,8 @@
 #include <stdint.h>
 #include "usb.h"
 #include "serial.h"
+
+#define ACTIVE_EEPROM_OFFSET (uint8_t *)(0x01)
 
 #define RELAY_DISABLED PORTC &= ~_BV(PC6)
 #define RELAY_ENABLED  PORTC |= _BV(PC6)
@@ -90,6 +93,13 @@ void poll_usb(void)
         if (!triggered)
         {
             heartbeat = value;
+
+            // EEPROM is guaranteed for minimum 100000 write cycles
+            // even toggling this 10 times per day gives an expected
+            // lifetime of 27 years.
+            // Not worth worrying about wear leveling!
+        	eeprom_update_byte(ACTIVE_EEPROM_OFFSET, heartbeat != 0);
+
             if (heartbeat != 0)
                 HEARTBEAT_LED_ENABLED;
             else
@@ -119,6 +129,14 @@ int main(void)
 
     usb_initialize();
     serial_initialize();
+
+    // Unit was reset while it was active!
+    // Wait a little for power to stabilise and close
+    if (eeprom_read_byte(ACTIVE_EEPROM_OFFSET))
+    {
+        heartbeat = 30;
+        HEARTBEAT_LED_ENABLED;
+    }
 
     sei();
     for (;;)
