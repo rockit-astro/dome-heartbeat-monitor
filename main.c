@@ -63,13 +63,11 @@ volatile bool send_status_byte = false;
 
 void poll_usb(void)
 {
-    // Check for ping or disable bytes from the host PC
-    while (usb_can_read())
-    {
-        int16_t value = usb_read();
-        if (value < 0)
-            break;
+    int16_t value;
 
+    // Check for ping or disable bytes from the host PC
+    while ((value = usb_read()) >= 0)
+    {
         // Enable the siren for 5 seconds
         if (value == 0xFF)
             enable_siren_steps = 10;

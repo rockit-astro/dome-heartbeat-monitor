@@ -62,11 +62,6 @@ void usb_initialize(void)
     USB_Init();
 }
 
-bool usb_can_read(void)
-{
-    return CDC_Device_BytesReceived(&interface) > 0;
-}
-
 // Read a byte from the receive buffer
 // Will return negative if unable to read
 int16_t usb_read(void)
