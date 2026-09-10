@@ -49,5 +49,6 @@
 	#define DEVICE_STATE_AS_GPIOR            0
 	#define FIXED_NUM_CONFIGURATIONS         1
 	#define INTERRUPT_CONTROL_ENDPOINT
+    #define NO_CLASS_DRIVER_AUTOFLUSH
 
 #endif
